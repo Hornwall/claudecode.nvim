@@ -764,13 +764,13 @@ function M._create_commands()
     local total_count = #files
 
     for _, file_path in ipairs(files) do
-      local success, error_msg = M.send_at_mention(file_path, nil, nil, "CodexTreeAdd")
+      local success, error_msg = M.send_reference(file_path, nil, nil)
       if success then
         success_count = success_count + 1
       else
         logger.error(
           "command",
-          "CodexTreeAdd: Failed to add file: " .. file_path .. " - " .. (error_msg or "unknown error")
+          "CodexTreeAdd: Failed to add file reference: " .. file_path .. " - " .. (error_msg or "unknown error")
         )
       end
     end
@@ -781,8 +781,8 @@ function M._create_commands()
       local message = string.format("Added %d/%d files to Codex context", success_count, total_count)
       logger.debug("command", message)
     else
-      local message = success_count == 1 and "Added 1 file to Codex context"
-        or string.format("Added %d files to Codex context", success_count)
+      local message = success_count == 1 and "Sent 1 file reference to Codex"
+        or string.format("Sent %d file references to Codex", success_count)
       logger.debug("command", message)
     end
   end
@@ -811,20 +811,20 @@ function M._create_commands()
     local total_count = #files
 
     for _, file_path in ipairs(files) do
-      local success, error_msg = M.send_at_mention(file_path, nil, nil, "CodexTreeAdd_visual")
+      local success, error_msg = M.send_reference(file_path, nil, nil)
       if success then
         success_count = success_count + 1
       else
         logger.error(
           "command",
-          "CodexTreeAdd_visual: Failed to add file: " .. file_path .. " - " .. (error_msg or "unknown error")
+          "CodexTreeAdd_visual: Failed to add file reference: " .. file_path .. " - " .. (error_msg or "unknown error")
         )
       end
     end
 
     if success_count > 0 then
-      local message = success_count == 1 and "Added 1 file to Codex context from visual selection"
-        or string.format("Added %d files to Codex context from visual selection", success_count)
+      local message = success_count == 1 and "Sent 1 file reference to Codex from visual selection"
+        or string.format("Sent %d file references to Codex from visual selection", success_count)
       logger.debug("command", message)
 
       if success_count < total_count then
@@ -903,11 +903,11 @@ function M._create_commands()
     local claude_start_line = start_line and (start_line - 1) or nil
     local claude_end_line = end_line and (end_line - 1) or nil
 
-    local success, error_msg = M.send_at_mention(file_path, claude_start_line, claude_end_line, "CodexAdd")
+    local success, error_msg = M.send_reference(file_path, claude_start_line, claude_end_line)
     if not success then
-      logger.error("command", "CodexAdd: " .. (error_msg or "Failed to add file"))
+      logger.error("command", "CodexAdd: " .. (error_msg or "Failed to add file reference"))
     else
-      local message = "CodexAdd: Successfully added " .. file_path
+      local message = "CodexAdd: Sent reference for " .. file_path
       if start_line or end_line then
         if start_line and end_line then
           message = message .. " (lines " .. start_line .. "-" .. end_line .. ")"
@@ -1096,17 +1096,8 @@ function M._broadcast_at_mention(file_path, start_line, end_line)
     start_line = nil
     end_line = nil
   end
-  -- Format a context block and send to terminal input for Codex
-  local ok, err_or_text = pcall(M._build_context_block, formatted_path, start_line, end_line)
-  if not ok then
-    return false, err_or_text
-  end
-  local terminal = require("claudecode.terminal")
-  local sent = terminal.send_input(err_or_text)
-  if not sent then
-    return false, "Failed to send context to Codex terminal"
-  end
-  return true, nil
+  -- Default Codex behavior for file adds is to send a reference line to chat
+  return M.send_reference(formatted_path, start_line, end_line)
 end
 
 ---Build a context block for Codex terminal input
@@ -1184,6 +1175,41 @@ function M.send_context_text(file_path, start_line, end_line, text)
   local block = string.format("%s```%s\n%s\n``" .. "`\n", header, ext, text)
   local terminal = require("claudecode.terminal")
   return terminal.send_input(block)
+end
+
+---Build a single-line reference for Codex and send it to the terminal
+---@param file_path string
+---@param start_line number|nil -- 0-indexed
+---@param end_line number|nil -- 0-indexed
+---@return boolean success, string|nil error
+function M.send_reference(file_path, start_line, end_line)
+  local cfg = M.state.config and M.state.config.codex or { reference_format = "@file {path}:{start1}-{end1}", whole_file_reference_format = "@file {path}" }
+  local template
+  if start_line and end_line then
+    template = cfg.reference_format
+  else
+    template = cfg.whole_file_reference_format
+  end
+
+  local path = file_path
+  local start1 = start_line and (start_line + 1) or nil
+  local end1 = end_line and (end_line + 1) or nil
+
+  local line = template
+  line = line:gsub("{path}", path)
+  if start1 then
+    line = line:gsub("{start1}", tostring(start1))
+  end
+  if end1 then
+    line = line:gsub("{end1}", tostring(end1))
+  end
+
+  local terminal = require("claudecode.terminal")
+  local ok = terminal.send_input(line)
+  if not ok then
+    return false, "Failed to send Codex reference to terminal"
+  end
+  return true, nil
 end
 
 function M._add_paths_to_claude(file_paths, options)

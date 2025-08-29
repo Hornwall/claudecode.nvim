@@ -30,6 +30,10 @@ M.defaults = {
     { name = "Codex Fast", value = "fast" },
     { name = "Codex Reasoning", value = "reasoning" },
   },
+  codex = {
+    reference_format = "@file {path}:{start1}-{end1}",
+    whole_file_reference_format = "@file {path}",
+  },
   terminal = nil, -- Will be lazy-loaded to avoid circular dependency
 }
 
@@ -126,6 +130,17 @@ function M.validate(config)
     assert(type(model.name) == "string" and model.name ~= "", "models[" .. i .. "].name must be a non-empty string")
     assert(type(model.value) == "string" and model.value ~= "", "models[" .. i .. "].value must be a non-empty string")
   end
+
+  -- Validate Codex reference formatting
+  assert(type(config.codex) == "table", "codex must be a table")
+  assert(
+    type(config.codex.reference_format) == "string" and config.codex.reference_format ~= "",
+    "codex.reference_format must be a non-empty string"
+  )
+  assert(
+    type(config.codex.whole_file_reference_format) == "string" and config.codex.whole_file_reference_format ~= "",
+    "codex.whole_file_reference_format must be a non-empty string"
+  )
 
   return true
 end
