@@ -568,11 +568,11 @@ function M.send_current_selection()
   end
 
   local main = require("claudecode")
-  local ok = main.send_context_text(selection.filePath, selection.selection.start.line, selection.selection["end"].line, selection.text)
+  local ok = main.send_reference(selection.filePath, selection.selection.start.line, selection.selection["end"].line)
   if ok then
-    vim.api.nvim_echo({ { "Selection sent to Codex", "Normal" } }, false, {})
+    vim.api.nvim_echo({ { "Reference sent to Codex", "Normal" } }, false, {})
   else
-    vim.api.nvim_echo({ { "Failed to send selection to Codex", "ErrorMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Failed to send reference to Codex", "ErrorMsg" } }, false, {})
   end
 end
 
@@ -683,12 +683,12 @@ function M.send_at_mention_for_visual_selection(line1, line2)
   local end_line = sel_to_send.selection["end"].line -- Already 0-indexed
 
   local main = require("claudecode")
-  local ok = main.send_context_text(file_path, start_line, end_line, sel_to_send.text)
+  local ok = main.send_reference(file_path, start_line, end_line)
   if ok then
-    logger.debug("selection", "Visual selection sent to Codex terminal.")
+    logger.debug("selection", "Visual selection reference sent to Codex terminal.")
     return true
   end
-  logger.error("selection", "Failed to send selection to Codex terminal")
+  logger.error("selection", "Failed to send reference to Codex terminal")
   return false
 end
 return M
