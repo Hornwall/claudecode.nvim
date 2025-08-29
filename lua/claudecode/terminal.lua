@@ -172,7 +172,7 @@ local function get_provider()
   if not native_provider then
     error("ClaudeCode: Critical error - native terminal provider failed to load")
   end
-  return native_provider
+return native_provider
 end
 
 ---Builds the effective terminal configuration by merging defaults with overrides
@@ -283,6 +283,40 @@ local function ensure_terminal_visible_no_focus(opts_override, cmd_args)
 
   provider.open(cmd_string, claude_env_table, effective_config, false) -- false = don't focus
   return true
+end
+
+---Send raw input to the active Codex terminal.
+---Opens the terminal if needed and sends the provided text.
+---@param text string|table Text to send (string or list of lines)
+---@return boolean success
+function M.send_input(text)
+  local provider = get_provider()
+  local bufnr = provider.get_active_bufnr()
+
+  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+    -- Ensure a terminal exists and is visible (no focus change)
+    ensure_terminal_visible_no_focus({}, nil)
+    bufnr = provider.get_active_bufnr()
+  end
+
+  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+
+  local jobid = vim.b[bufnr] and vim.b[bufnr].terminal_job_id
+  if not jobid then
+    return false
+  end
+
+  local payload = text
+  if type(text) == "string" then
+    -- Ensure newline to submit input
+    if not text:match("\n$") then
+      payload = text .. "\n"
+    end
+  end
+
+  return vim.fn.chansend(jobid, payload) > 0
 end
 
 ---Configures the terminal module.

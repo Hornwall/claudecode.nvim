@@ -1,4 +1,4 @@
----Manages selection tracking and communication with the Claude server.
+---Manages selection tracking and communication for Codex.
 ---@module 'claudecode.selection'
 local M = {}
 
@@ -55,7 +55,7 @@ end
 ---Sets up listeners for CursorMoved, CursorMovedI, ModeChanged, and TextChanged events.
 ---@local
 function M._create_autocommands()
-  local group = vim.api.nvim_create_augroup("ClaudeCodeSelection", { clear = true })
+  local group = vim.api.nvim_create_augroup("CodexSelection", { clear = true })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     group = group,
@@ -82,7 +82,7 @@ end
 ---Clears the autocommands related to selection tracking.
 ---@local
 function M._clear_autocommands()
-  vim.api.nvim_clear_autocmds({ group = "ClaudeCodeSelection" })
+  vim.api.nvim_clear_autocmds({ group = "CodexSelection" })
 end
 
 ---Handles cursor movement events.
@@ -128,7 +128,7 @@ function M.update_selection()
   local current_buf = vim.api.nvim_get_current_buf()
   local buf_name = vim.api.nvim_buf_get_name(current_buf)
 
-  -- If the buffer name starts with "✻ [Claude Code]", do not update selection
+  -- If the buffer name starts with a special diff/assistant tag, do not update selection
   if buf_name and string.sub(buf_name, 1, string.len("✻ [Claude Code]")) == "✻ [Claude Code]" then
     -- Optionally, cancel demotion timer like for the terminal
     if M.state.demotion_timer then
@@ -139,11 +139,11 @@ function M.update_selection()
     return
   end
 
-  -- If the current buffer is the Claude terminal, do not update selection
+  -- If the current buffer is the Codex terminal, do not update selection
   if terminal then
     local claude_term_bufnr = terminal.get_active_terminal_bufnr()
     if claude_term_bufnr and current_buf == claude_term_bufnr then
-      -- Cancel any pending demotion if we switch to the Claude terminal
+      -- Cancel any pending demotion if we switch to the Codex terminal
       if M.state.demotion_timer then
         M.state.demotion_timer:stop()
         M.state.demotion_timer:close()
@@ -553,8 +553,8 @@ end
 ---This function is typically invoked by a user command. It forces an immediate
 ---update and sends the latest selection.
 function M.send_current_selection()
-  if not M.state.tracking_enabled or not M.server then
-    logger.error("selection", "Claude Code is not running")
+  if not M.state.tracking_enabled then
+    logger.error("selection", "Selection tracking is not enabled.")
     return
   end
 
@@ -567,9 +567,13 @@ function M.send_current_selection()
     return
   end
 
-  M.send_selection_update(selection)
-
-  vim.api.nvim_echo({ { "Selection sent to Claude", "Normal" } }, false, {})
+  local main = require("claudecode")
+  local ok = main.send_context_text(selection.filePath, selection.selection.start.line, selection.selection["end"].line, selection.text)
+  if ok then
+    vim.api.nvim_echo({ { "Selection sent to Codex", "Normal" } }, false, {})
+  else
+    vim.api.nvim_echo({ { "Failed to send selection to Codex", "ErrorMsg" } }, false, {})
+  end
 end
 
 ---Gets selection from range marks (e.g., when using :'<,'> commands)
@@ -633,13 +637,6 @@ function M.send_at_mention_for_visual_selection(line1, line2)
     return false
   end
 
-  -- Check if Claude Code integration is running (server may or may not have clients)
-  local claudecode_main = require("claudecode")
-  if not claudecode_main.state.server then
-    logger.error("selection", "Claude Code integration is not running.")
-    return false
-  end
-
   local sel_to_send
 
   -- If range parameters are provided, use them (for :'<,'> commands)
@@ -685,15 +682,13 @@ function M.send_at_mention_for_visual_selection(line1, line2)
   local start_line = sel_to_send.selection.start.line -- Already 0-indexed from selection module
   local end_line = sel_to_send.selection["end"].line -- Already 0-indexed
 
-  local success, error_msg = claudecode_main.send_at_mention(file_path, start_line, end_line, "ClaudeCodeSend")
-
-  if success then
-    logger.debug("selection", "Visual selection sent as at-mention.")
-
+  local main = require("claudecode")
+  local ok = main.send_context_text(file_path, start_line, end_line, sel_to_send.text)
+  if ok then
+    logger.debug("selection", "Visual selection sent to Codex terminal.")
     return true
-  else
-    logger.error("selection", "Failed to send at-mention: " .. (error_msg or "unknown error"))
-    return false
   end
+  logger.error("selection", "Failed to send selection to Codex terminal")
+  return false
 end
 return M

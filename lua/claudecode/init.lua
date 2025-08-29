@@ -1083,10 +1083,6 @@ end
 
 ---Test helper functions (exposed for testing)
 function M._broadcast_at_mention(file_path, start_line, end_line)
-  if not M.state.server then
-    return false, "Codex integration is not running"
-  end
-
   -- Safely format the path and handle validation errors
   local formatted_path, is_directory
   local format_success, format_result, is_dir_result = pcall(M._format_path_for_at_mention, file_path)
@@ -1100,34 +1096,94 @@ function M._broadcast_at_mention(file_path, start_line, end_line)
     start_line = nil
     end_line = nil
   end
+  -- Format a context block and send to terminal input for Codex
+  local ok, err_or_text = pcall(M._build_context_block, formatted_path, start_line, end_line)
+  if not ok then
+    return false, err_or_text
+  end
+  local terminal = require("claudecode.terminal")
+  local sent = terminal.send_input(err_or_text)
+  if not sent then
+    return false, "Failed to send context to Codex terminal"
+  end
+  return true, nil
+end
 
-  local params = {
-    filePath = formatted_path,
-    lineStart = start_line,
-    lineEnd = end_line,
-  }
-
-  -- For tests or when explicitly configured, broadcast immediately without queuing
-  if
-    (M.state.config and M.state.config.disable_broadcast_debouncing)
-    or (package.loaded["busted"] and not (M.state.config and M.state.config.enable_broadcast_debouncing_in_tests))
-  then
-    local broadcast_success = M.state.server.broadcast("at_mentioned", params)
-    if broadcast_success then
-      return true, nil
-    else
-      local error_msg = "Failed to broadcast " .. (is_directory and "directory" or "file") .. " " .. formatted_path
-      logger.error("command", error_msg)
-      return false, error_msg
-    end
+---Build a context block for Codex terminal input
+---@param file_path string
+---@param start_line number|nil -- 0-indexed
+---@param end_line number|nil -- 0-indexed
+---@return string block
+function M._build_context_block(file_path, start_line, end_line)
+  local is_dir = vim.fn.isdirectory(file_path) == 1
+  if is_dir then
+    return string.format("[Context] Directory: %s\n", file_path)
   end
 
-  -- Use mention queue system for debounced broadcasting
-  queue_mention(formatted_path, start_line, end_line)
+  local content
+  local ok, fh = pcall(io.open, file_path, "r")
+  if not ok or not fh then
+    error("Unable to read file: " .. file_path)
+  end
+  local all = fh:read("*a")
+  fh:close()
+  local lines = {}
+  for line in (all .. "\n"):gmatch("(.-)\n") do
+    table.insert(lines, line)
+  end
 
-  -- Always return success since we're queuing the message
-  -- The actual broadcast result will be logged in the queue processing
-  return true, nil
+  local display_start, display_end
+  if start_line and end_line then
+    display_start = math.max(0, start_line)
+    display_end = math.min(#lines - 1, end_line)
+  else
+    display_start = 0
+    display_end = #lines - 1
+  end
+
+  local slice = {}
+  for i = display_start + 1, display_end + 1 do
+    table.insert(slice, lines[i])
+  end
+
+  local ext = file_path:match("%.([%w_%-]+)$") or ""
+  local header
+  if start_line and end_line then
+    header = string.format("[Context] %s (lines %d-%d)\n", file_path, display_start + 1, display_end + 1)
+  else
+    header = string.format("[Context] %s\n", file_path)
+  end
+  local fence_lang = ext
+  local block = {}
+  table.insert(block, header)
+  table.insert(block, string.format("```%s\n", fence_lang))
+  table.insert(block, table.concat(slice, "\n"))
+  table.insert(block, "\n``" .. "`\n")
+  return table.concat(block)
+end
+
+---Send explicit context text to Codex terminal
+---@param file_path string
+---@param start_line number|nil -- 0-indexed
+---@param end_line number|nil -- 0-indexed
+---@param text string
+function M.send_context_text(file_path, start_line, end_line, text)
+  local formatted_path = file_path
+  local ok, fmt_path = pcall(M._format_path_for_at_mention, file_path)
+  if ok and fmt_path then
+    formatted_path = fmt_path
+  end
+
+  local header
+  if start_line and end_line then
+    header = string.format("[Context] %s (lines %d-%d)\n", formatted_path, start_line + 1, end_line + 1)
+  else
+    header = string.format("[Context] %s\n", formatted_path)
+  end
+  local ext = formatted_path:match("%.([%w_%-]+)$") or ""
+  local block = string.format("%s```%s\n%s\n``" .. "`\n", header, ext, text)
+  local terminal = require("claudecode.terminal")
+  return terminal.send_input(block)
 end
 
 function M._add_paths_to_claude(file_paths, options)
