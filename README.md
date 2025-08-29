@@ -1,10 +1,10 @@
-# claudecode.nvim
+# codex.nvim
 
 [![Tests](https://github.com/coder/claudecode.nvim/actions/workflows/test.yml/badge.svg)](https://github.com/coder/claudecode.nvim/actions/workflows/test.yml)
 ![Neovim version](https://img.shields.io/badge/Neovim-0.8%2B-green)
 ![Status](https://img.shields.io/badge/Status-beta-blue)
 
-**The first Neovim IDE integration for Claude Code** — bringing Anthropic's AI coding assistant to your favorite editor with a pure Lua implementation.
+Neovim IDE integration for Codex — bringing a modern AI coding assistant to your favorite editor with a pure Lua implementation.
 
 > 🎯 **TL;DR:** When Anthropic released Claude Code with VS Code and JetBrains support, I reverse-engineered their extension and built this Neovim plugin. This plugin implements the same WebSocket-based MCP protocol, giving Neovim users the same AI-powered coding experience.
 
@@ -24,27 +24,27 @@ When Anthropic released Claude Code, they only supported VS Code and JetBrains. 
 
 ```lua
 {
-  "coder/claudecode.nvim",
+  "coder/codex.nvim",
   dependencies = { "folke/snacks.nvim" },
   config = true,
   keys = {
-    { "<leader>a", nil, desc = "AI/Claude Code" },
-    { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
-    { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
-    { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
-    { "<leader>aC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Claude" },
-    { "<leader>am", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Select Claude model" },
-    { "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add current buffer" },
-    { "<leader>as", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send to Claude" },
+    { "<leader>a", nil, desc = "AI/Codex" },
+    { "<leader>ac", "<cmd>Codex<cr>", desc = "Toggle Codex" },
+    { "<leader>af", "<cmd>CodexFocus<cr>", desc = "Focus Codex" },
+    { "<leader>ar", "<cmd>Codex --resume<cr>", desc = "Resume Codex" },
+    { "<leader>aC", "<cmd>Codex --continue<cr>", desc = "Continue Codex" },
+    { "<leader>am", "<cmd>CodexSelectModel<cr>", desc = "Select Codex model" },
+    { "<leader>ab", "<cmd>CodexAdd %<cr>", desc = "Add current buffer" },
+    { "<leader>as", "<cmd>CodexSend<cr>", mode = "v", desc = "Send to Codex" },
     {
       "<leader>as",
-      "<cmd>ClaudeCodeTreeAdd<cr>",
+      "<cmd>CodexTreeAdd<cr>",
       desc = "Add file",
       ft = { "NvimTree", "neo-tree", "oil", "minifiles" },
     },
     -- Diff management
-    { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Accept diff" },
-    { "<leader>ad", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "Deny diff" },
+    { "<leader>aa", "<cmd>CodexDiffAccept<cr>", desc = "Accept diff" },
+    { "<leader>ad", "<cmd>CodexDiffDeny<cr>", desc = "Deny diff" },
   },
 }
 ```

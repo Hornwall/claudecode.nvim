@@ -1,5 +1,5 @@
---- External terminal provider for Claude Code.
----Launches Claude Code in an external terminal application using a user-specified command.
+--- External terminal provider for Codex.
+---Launches Codex in an external terminal application using a user-specified command.
 ---@module 'claudecode.terminal.external'
 
 ---@type ClaudeCodeTerminalProvider
@@ -32,7 +32,7 @@ function M.open(cmd_string, env_table)
   if is_valid() then
     -- External terminal is already running, we can't focus it programmatically
     -- Just log that it's already running
-    logger.debug("terminal", "External Claude terminal is already running")
+    logger.debug("terminal", "External Codex terminal is already running")
     return
   end
 
@@ -47,9 +47,9 @@ function M.open(cmd_string, env_table)
     return
   end
 
-  -- Replace %s in the template with the Claude command
+  -- Replace %s in the template with the Codex command
   if not external_cmd:find("%%s") then
-    vim.notify("external_terminal_cmd must contain '%s' placeholder for the Claude command.", vim.log.levels.ERROR)
+    vim.notify("external_terminal_cmd must contain '%s' placeholder for the Codex command.", vim.log.levels.ERROR)
     return
   end
 

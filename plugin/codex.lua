@@ -3,21 +3,12 @@ if vim.fn.has("nvim-0.8.0") ~= 1 then
   return
 end
 
-if vim.g.loaded_claudecode then
+if vim.g.loaded_codex then
   return
 end
-vim.g.loaded_claudecode = 1
+vim.g.loaded_codex = 1
 
--- Back-compat shim for legacy setups
-if vim.g.claudecode_auto_setup and not vim.g.codex_auto_setup then
-  vim.g.codex_auto_setup = vim.g.claudecode_auto_setup
-end
-
--- Encourage migration but keep functionality working
-vim.schedule(function()
-  vim.notify("claudecode plugin entry is deprecated. Use 'codex' instead.", vim.log.levels.WARN)
-end)
-
+-- Optional auto-setup: set vim.g.codex_auto_setup = { auto_start = true }
 if vim.g.codex_auto_setup then
   vim.defer_fn(function()
     require("codex").setup(vim.g.codex_auto_setup)

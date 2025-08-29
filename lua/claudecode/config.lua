@@ -1,5 +1,5 @@
 ---@brief [[
---- Manages configuration for the Claude Code Neovim integration.
+--- Manages configuration for the Codex Neovim integration.
 --- Provides default settings, validation, and application of user-defined configurations.
 ---@brief ]]
 ---@module 'claudecode.config'
@@ -11,12 +11,12 @@ M.defaults = {
   port_range = { min = 10000, max = 65535 },
   auto_start = true,
   terminal_cmd = nil,
-  env = {}, -- Custom environment variables for Claude terminal
+  env = {}, -- Custom environment variables for Codex terminal
   log_level = "info",
   track_selection = true,
   visual_demotion_delay_ms = 50, -- Milliseconds to wait before demoting a visual selection
   connection_wait_delay = 200, -- Milliseconds to wait after connection before sending queued @ mentions
-  connection_timeout = 10000, -- Maximum time to wait for Claude Code to connect (milliseconds)
+  connection_timeout = 10000, -- Maximum time to wait for Codex to connect (milliseconds)
   queue_timeout = 5000, -- Maximum time to keep @ mentions in queue (milliseconds)
   diff_opts = {
     auto_close_on_accept = true,
@@ -26,9 +26,9 @@ M.defaults = {
     keep_terminal_focus = false, -- If true, moves focus back to terminal after diff opens
   },
   models = {
-    { name = "Claude Opus 4.1 (Latest)", value = "opus" },
-    { name = "Claude Sonnet 4 (Latest)", value = "sonnet" },
-    { name = "Claude Haiku 3.5 (Latest)", value = "haiku" },
+    { name = "Codex Default", value = "default" },
+    { name = "Codex Fast", value = "fast" },
+    { name = "Codex Reasoning", value = "reasoning" },
   },
   terminal = nil, -- Will be lazy-loaded to avoid circular dependency
 }

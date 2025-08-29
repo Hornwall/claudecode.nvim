@@ -1,4 +1,4 @@
----Native Neovim terminal provider for Claude Code.
+---Native Neovim terminal provider for Codex.
 ---@module 'claudecode.terminal.native'
 
 local M = {}
@@ -246,19 +246,19 @@ local function show_hidden_terminal(effective_config, focus)
   return true
 end
 
-local function find_existing_claude_terminal()
+local function find_existing_codex_terminal()
   local buffers = vim.api.nvim_list_bufs()
   for _, buf in ipairs(buffers) do
     if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-      -- Check if this is a Claude Code terminal by examining the buffer name or terminal job
+      -- Check if this is a Codex terminal by examining the buffer name or terminal job
       local buf_name = vim.api.nvim_buf_get_name(buf)
       -- Terminal buffers often have names like "term://..." that include the command
-      if buf_name:match("claude") then
+      if buf_name:match("codex") then
         -- Additional check: see if there's a window displaying this buffer
         local windows = vim.api.nvim_list_wins()
         for _, win in ipairs(windows) do
           if vim.api.nvim_win_get_buf(win) == buf then
-            logger.debug("terminal", "Found existing Claude terminal in buffer", buf, "window", win)
+            logger.debug("terminal", "Found existing Codex terminal in buffer", buf, "window", win)
             return buf, win
           end
         end
@@ -293,21 +293,21 @@ function M.open(cmd_string, env_table, effective_config, focus)
       end
     end
   else
-    -- Check if there's an existing Claude terminal we lost track of
-    local existing_buf, existing_win = find_existing_claude_terminal()
+    -- Check if there's an existing Codex terminal we lost track of
+    local existing_buf, existing_win = find_existing_codex_terminal()
     if existing_buf and existing_win then
       -- Recover the existing terminal
       bufnr = existing_buf
       winid = existing_win
       -- Note: We can't recover the job ID easily, but it's less critical
-      logger.debug("terminal", "Recovered existing Claude terminal")
+      logger.debug("terminal", "Recovered existing Codex terminal")
       if focus then
         focus_terminal() -- Focus recovered terminal
       end
       -- If focus=false, preserve user context by staying in current window
     else
       if not open_terminal(cmd_string, env_table, effective_config, focus) then
-        vim.notify("Failed to open Claude terminal using native fallback.", vim.log.levels.ERROR)
+        vim.notify("Failed to open Codex terminal using native fallback.", vim.log.levels.ERROR)
       end
     end
   end
@@ -340,17 +340,17 @@ function M.simple_toggle(cmd_string, env_table, effective_config)
       end
     else
       -- No terminal process exists, check if there's an existing one we lost track of
-      local existing_buf, existing_win = find_existing_claude_terminal()
+      local existing_buf, existing_win = find_existing_codex_terminal()
       if existing_buf and existing_win then
         -- Recover the existing terminal
         bufnr = existing_buf
         winid = existing_win
-        logger.debug("terminal", "Recovered existing Claude terminal")
+        logger.debug("terminal", "Recovered existing Codex terminal")
         focus_terminal()
       else
         -- No existing terminal found, create a new one
         if not open_terminal(cmd_string, env_table, effective_config) then
-          vim.notify("Failed to open Claude terminal using native fallback (simple_toggle).", vim.log.levels.ERROR)
+          vim.notify("Failed to open Codex terminal using native fallback (simple_toggle).", vim.log.levels.ERROR)
         end
       end
     end
@@ -388,12 +388,12 @@ function M.focus_toggle(cmd_string, env_table, effective_config)
     end
   else
     -- No terminal process exists, check if there's an existing one we lost track of
-    local existing_buf, existing_win = find_existing_claude_terminal()
+    local existing_buf, existing_win = find_existing_codex_terminal()
     if existing_buf and existing_win then
       -- Recover the existing terminal
       bufnr = existing_buf
       winid = existing_win
-      logger.debug("terminal", "Recovered existing Claude terminal")
+      logger.debug("terminal", "Recovered existing Codex terminal")
 
       -- Check if we're currently in this recovered terminal
       local current_win_id = vim.api.nvim_get_current_win()
@@ -407,7 +407,7 @@ function M.focus_toggle(cmd_string, env_table, effective_config)
     else
       -- No existing terminal found, create a new one
       if not open_terminal(cmd_string, env_table, effective_config) then
-        vim.notify("Failed to open Claude terminal using native fallback (focus_toggle).", vim.log.levels.ERROR)
+        vim.notify("Failed to open Codex terminal using native fallback (focus_toggle).", vim.log.levels.ERROR)
       end
     end
   end

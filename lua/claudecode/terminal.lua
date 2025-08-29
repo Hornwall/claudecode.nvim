@@ -218,7 +218,7 @@ local function is_terminal_visible(bufnr)
   return bufinfo and #bufinfo > 0 and #bufinfo[1].windows > 0
 end
 
----Gets the claude command string and necessary environment variables
+---Gets the Codex command string and necessary environment variables
 ---@param cmd_args string? Optional arguments to append to the command
 ---@return string cmd_string The command string
 ---@return table env_table The environment variables table
@@ -227,7 +227,7 @@ local function get_claude_command_and_env(cmd_args)
   local cmd_from_config = defaults.terminal_cmd
   local base_cmd
   if not cmd_from_config or cmd_from_config == "" then
-    base_cmd = "claude" -- Default if not configured
+    base_cmd = "codex" -- Default if not configured
   else
     base_cmd = cmd_from_config
   end
@@ -246,7 +246,7 @@ local function get_claude_command_and_env(cmd_args)
   }
 
   if sse_port_value then
-    env_table["CLAUDE_CODE_SSE_PORT"] = tostring(sse_port_value)
+    env_table["CODEX_IDE_PORT"] = tostring(sse_port_value)
   end
 
   -- Merge custom environment variables from config

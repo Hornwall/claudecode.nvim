@@ -1,7 +1,7 @@
 ---@brief [[
---- Lock file management for Claude Code Neovim integration.
+--- Lock file management for Codex Neovim integration.
 --- This module handles creation, removal and updating of lock files
---- which allow Claude Code CLI to discover the Neovim integration.
+--- which allow the Codex CLI to discover the Neovim integration.
 ---@brief ]]
 ---@module 'claudecode.lockfile'
 local M = {}
@@ -9,11 +9,12 @@ local M = {}
 ---Path to the lock file directory
 ---@return string lock_dir The path to the lock file directory
 local function get_lock_dir()
-  local claude_config_dir = os.getenv("CLAUDE_CONFIG_DIR")
-  if claude_config_dir and claude_config_dir ~= "" then
-    return vim.fn.expand(claude_config_dir .. "/ide")
+  -- Prefer Codex-specific config dir, fall back to default
+  local codex_config_dir = os.getenv("CODEX_CONFIG_DIR")
+  if codex_config_dir and codex_config_dir ~= "" then
+    return vim.fn.expand(codex_config_dir .. "/ide")
   else
-    return vim.fn.expand("~/.claude/ide")
+    return vim.fn.expand("~/.codex/ide")
   end
 end
 

@@ -1,4 +1,4 @@
----@brief WebSocket server for Claude Code Neovim integration
+---@brief WebSocket server for Codex Neovim integration
 local claudecode_main = require("claudecode") -- Added for version access
 local logger = require("claudecode.logger")
 local tcp_server = require("claudecode.server.tcp")
@@ -276,7 +276,7 @@ function M.register_handlers()
           tools = { listChanged = true },
         },
         serverInfo = {
-          name = "claudecode-neovim",
+          name = "codex-neovim",
           version = claudecode_main.version:string(),
         },
       }

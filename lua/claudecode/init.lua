@@ -1,6 +1,6 @@
 ---@brief [[
---- Claude Code Neovim Integration
---- This plugin integrates Claude Code CLI with Neovim, enabling
+--- Codex Neovim Integration
+--- This plugin integrates the Codex CLI with Neovim, enabling
 --- seamless AI-assisted coding experiences directly in Neovim.
 ---@brief ]]
 
@@ -38,7 +38,7 @@ M.state = {
   connection_timer = nil,
 }
 
----Check if Claude Code is connected to WebSocket server
+---Check if Codex is connected to WebSocket server
 ---@return boolean connected Whether Claude Code has active connections
 function M.is_claude_connected()
   if not M.state.server then
@@ -150,7 +150,7 @@ function M.process_mention_queue(from_new_connection)
 
   if not M.is_claude_connected() then
     -- Still disconnected, wait for connection
-    logger.debug("queue", "Claude not connected, keeping " .. #M.state.mention_queue .. " mentions queued")
+  logger.debug("queue", "Codex not connected, keeping " .. #M.state.mention_queue .. " mentions queued")
     return
   end
 
@@ -224,7 +224,7 @@ function M.process_mention_queue(from_new_connection)
   end
 end
 
----Show terminal if Claude is connected and it's not already visible
+---Show terminal if Codex is connected and it's not already visible
 ---@return boolean success Whether terminal was shown or was already visible
 function M._ensure_terminal_visible_if_connected()
   if not M.is_claude_connected() then
@@ -248,7 +248,7 @@ function M._ensure_terminal_visible_if_connected()
   return true
 end
 
----Send @ mention to Claude Code, handling connection state automatically
+---Send @ mention to Codex, handling connection state automatically
 ---@param file_path string The file path to send
 ---@param start_line number|nil Start line (0-indexed for Claude)
 ---@param end_line number|nil End line (0-indexed for Claude)
@@ -259,13 +259,13 @@ function M.send_at_mention(file_path, start_line, end_line, context)
   context = context or "command"
 
   if not M.state.server then
-    logger.error(context, "Claude Code integration is not running")
-    return false, "Claude Code integration is not running"
+    logger.error(context, "Codex integration is not running")
+    return false, "Codex integration is not running"
   end
 
   -- Check if Claude Code is connected
   if M.is_claude_connected() then
-    -- Claude is connected, send immediately and ensure terminal is visible
+    -- Codex is connected, send immediately and ensure terminal is visible
     local success, error_msg = M._broadcast_at_mention(file_path, start_line, end_line)
     if success then
       local terminal = require("claudecode.terminal")
@@ -273,14 +273,14 @@ function M.send_at_mention(file_path, start_line, end_line, context)
     end
     return success, error_msg
   else
-    -- Claude not connected, queue the mention and launch terminal
+    -- Codex not connected, queue the mention and launch terminal
     queue_mention(file_path, start_line, end_line)
 
-    -- Launch terminal with Claude Code
+    -- Launch terminal with Codex
     local terminal = require("claudecode.terminal")
     terminal.open()
 
-    logger.debug(context, "Queued @ mention and launched Claude Code: " .. file_path)
+    logger.debug(context, "Queued @ mention and launched Codex: " .. file_path)
 
     return true, nil
   end
@@ -321,7 +321,7 @@ function M.setup(opts)
   M._create_commands()
 
   vim.api.nvim_create_autocmd("VimLeavePre", {
-    group = vim.api.nvim_create_augroup("ClaudeCodeShutdown", { clear = true }),
+    group = vim.api.nvim_create_augroup("CodexShutdown", { clear = true }),
     callback = function()
       if M.state.server then
         M.stop()
@@ -330,14 +330,14 @@ function M.setup(opts)
         clear_mention_queue()
       end
     end,
-    desc = "Automatically stop Claude Code integration when exiting Neovim",
+    desc = "Automatically stop Codex integration when exiting Neovim",
   })
 
   M.state.initialized = true
   return M
 end
 
----Start the Claude Code integration
+---Start the Codex integration
 ---@param show_startup_notification? boolean Whether to show a notification upon successful startup (defaults to true)
 ---@return boolean success Whether the operation was successful
 ---@return number|string port_or_error The WebSocket port if successful, or error message if failed
@@ -346,7 +346,7 @@ function M.start(show_startup_notification)
     show_startup_notification = true
   end
   if M.state.server then
-    local msg = "Claude Code integration is already running on port " .. tostring(M.state.port)
+    local msg = "Codex integration is already running on port " .. tostring(M.state.port)
     logger.warn("init", msg)
     return false, "Already running"
   end
@@ -378,7 +378,7 @@ function M.start(show_startup_notification)
   local success, result = server.start(M.state.config, auth_token)
 
   if not success then
-    local error_msg = "Failed to start Claude Code server: " .. (result or "unknown error")
+    local error_msg = "Failed to start Codex server: " .. (result or "unknown error")
     if result and result:find("auth") then
       error_msg = error_msg .. " (authentication related)"
     end
@@ -424,18 +424,18 @@ function M.start(show_startup_notification)
   end
 
   if show_startup_notification then
-    logger.info("init", "Claude Code integration started on port " .. tostring(M.state.port))
+    logger.info("init", "Codex integration started on port " .. tostring(M.state.port))
   end
 
   return true, M.state.port
 end
 
----Stop the Claude Code integration
+---Stop the Codex integration
 ---@return boolean success Whether the operation was successful
 ---@return string|nil error Error message if operation failed
 function M.stop()
   if not M.state.server then
-    logger.warn("init", "Claude Code integration is not running")
+    logger.warn("init", "Codex integration is not running")
     return false, "Not running"
   end
 
@@ -455,7 +455,7 @@ function M.stop()
   local success, error = M.state.server.stop()
 
   if not success then
-    logger.error("init", "Failed to stop Claude Code integration: " .. error)
+    logger.error("init", "Failed to stop Codex integration: " .. error)
     return false, error
   end
 
@@ -466,7 +466,7 @@ function M.stop()
   -- Clear any queued @ mentions when server stops
   clear_mention_queue()
 
-  logger.info("init", "Claude Code integration stopped")
+  logger.info("init", "Codex integration stopped")
 
   return true
 end
@@ -474,26 +474,26 @@ end
 ---Set up user commands
 ---@private
 function M._create_commands()
-  vim.api.nvim_create_user_command("ClaudeCodeStart", function()
+  vim.api.nvim_create_user_command("CodexStart", function()
     M.start()
   end, {
-    desc = "Start Claude Code integration",
+    desc = "Start Codex integration",
   })
 
-  vim.api.nvim_create_user_command("ClaudeCodeStop", function()
+  vim.api.nvim_create_user_command("CodexStop", function()
     M.stop()
   end, {
-    desc = "Stop Claude Code integration",
+    desc = "Stop Codex integration",
   })
 
-  vim.api.nvim_create_user_command("ClaudeCodeStatus", function()
+  vim.api.nvim_create_user_command("CodexStatus", function()
     if M.state.server and M.state.port then
-      logger.info("command", "Claude Code integration is running on port " .. tostring(M.state.port))
+      logger.info("command", "Codex integration is running on port " .. tostring(M.state.port))
     else
-      logger.info("command", "Claude Code integration is not running")
+      logger.info("command", "Codex integration is not running")
     end
   end, {
-    desc = "Show Claude Code integration status",
+    desc = "Show Codex integration status",
   })
 
   ---@param file_paths table List of file paths to add
@@ -517,8 +517,8 @@ function M._create_commands()
       local function send_files_sequentially(index)
         if index > total_count then
           if show_summary then
-            local message = success_count == 1 and "Added 1 file to Claude context"
-              or string.format("Added %d files to Claude context", success_count)
+            local message = success_count == 1 and "Added 1 file to Codex context"
+              or string.format("Added %d files to Codex context", success_count)
             if total_count > success_count then
               message = message .. string.format(" (%d failed)", total_count - success_count)
             end
@@ -614,16 +614,16 @@ function M._create_commands()
       local files, error = integrations.get_selected_files_from_tree()
 
       if error then
-        logger.error("command", "ClaudeCodeSend->TreeAdd: " .. error)
+        logger.error("command", "CodexSend->TreeAdd: " .. error)
         return
       end
 
       if not files or #files == 0 then
-        logger.warn("command", "ClaudeCodeSend->TreeAdd: No files selected")
+        logger.warn("command", "CodexSend->TreeAdd: No files selected")
         return
       end
 
-      add_paths_to_claude(files, { context = "ClaudeCodeSend->TreeAdd" })
+      add_paths_to_claude(files, { context = "CodexSend->TreeAdd" })
 
       return
     end
@@ -646,7 +646,7 @@ function M._create_commands()
         end)
       end
     else
-      logger.error("command", "ClaudeCodeSend: Failed to load selection module.")
+      logger.error("command", "CodexSend: Failed to load selection module.")
     end
   end
 
@@ -684,16 +684,16 @@ function M._create_commands()
       end
 
       if error then
-        logger.error("command", "ClaudeCodeSend_visual->TreeAdd: " .. error)
+        logger.error("command", "CodexSend_visual->TreeAdd: " .. error)
         return
       end
 
       if not files or #files == 0 then
-        logger.warn("command", "ClaudeCodeSend_visual->TreeAdd: No files selected")
+        logger.warn("command", "CodexSend_visual->TreeAdd: No files selected")
         return
       end
 
-      add_paths_to_claude(files, { context = "ClaudeCodeSend_visual->TreeAdd" })
+      add_paths_to_claude(files, { context = "CodexSend_visual->TreeAdd" })
       return
     end
 
@@ -705,7 +705,7 @@ function M._create_commands()
       if not error and files and #files > 0 then
         local success_count = add_paths_to_claude(files, {
           delay = 10,
-          context = "ClaudeCodeSend_visual",
+          context = "CodexSend_visual",
           show_summary = false,
         })
         if success_count > 0 then
@@ -735,14 +735,14 @@ function M._create_commands()
   local visual_commands = require("claudecode.visual_commands")
   local unified_send_handler = visual_commands.create_visual_command_wrapper(handle_send_normal, handle_send_visual)
 
-  vim.api.nvim_create_user_command("ClaudeCodeSend", unified_send_handler, {
-    desc = "Send current visual selection as an at_mention to Claude Code (supports tree visual selection)",
+  vim.api.nvim_create_user_command("CodexSend", unified_send_handler, {
+    desc = "Send current visual selection as an at_mention to Codex (supports tree visual selection)",
     range = true,
   })
 
   local function handle_tree_add_normal()
     if not M.state.server then
-      logger.error("command", "ClaudeCodeTreeAdd: Claude Code integration is not running.")
+      logger.error("command", "CodexTreeAdd: Codex integration is not running.")
       return
     end
 
@@ -750,12 +750,12 @@ function M._create_commands()
     local files, error = integrations.get_selected_files_from_tree()
 
     if error then
-      logger.error("command", "ClaudeCodeTreeAdd: " .. error)
+      logger.error("command", "CodexTreeAdd: " .. error)
       return
     end
 
     if not files or #files == 0 then
-      logger.warn("command", "ClaudeCodeTreeAdd: No files selected")
+      logger.warn("command", "CodexTreeAdd: No files selected")
       return
     end
 
@@ -764,32 +764,32 @@ function M._create_commands()
     local total_count = #files
 
     for _, file_path in ipairs(files) do
-      local success, error_msg = M.send_at_mention(file_path, nil, nil, "ClaudeCodeTreeAdd")
+      local success, error_msg = M.send_at_mention(file_path, nil, nil, "CodexTreeAdd")
       if success then
         success_count = success_count + 1
       else
         logger.error(
           "command",
-          "ClaudeCodeTreeAdd: Failed to add file: " .. file_path .. " - " .. (error_msg or "unknown error")
+          "CodexTreeAdd: Failed to add file: " .. file_path .. " - " .. (error_msg or "unknown error")
         )
       end
     end
 
     if success_count == 0 then
-      logger.error("command", "ClaudeCodeTreeAdd: Failed to add any files")
+      logger.error("command", "CodexTreeAdd: Failed to add any files")
     elseif success_count < total_count then
-      local message = string.format("Added %d/%d files to Claude context", success_count, total_count)
+      local message = string.format("Added %d/%d files to Codex context", success_count, total_count)
       logger.debug("command", message)
     else
-      local message = success_count == 1 and "Added 1 file to Claude context"
-        or string.format("Added %d files to Claude context", success_count)
+      local message = success_count == 1 and "Added 1 file to Codex context"
+        or string.format("Added %d files to Codex context", success_count)
       logger.debug("command", message)
     end
   end
 
   local function handle_tree_add_visual(visual_data)
     if not M.state.server then
-      logger.error("command", "ClaudeCodeTreeAdd_visual: Claude Code integration is not running.")
+      logger.error("command", "CodexTreeAdd_visual: Codex integration is not running.")
       return
     end
 
@@ -797,12 +797,12 @@ function M._create_commands()
     local files, error = visual_cmd_module.get_files_from_visual_selection(visual_data)
 
     if error then
-      logger.error("command", "ClaudeCodeTreeAdd_visual: " .. error)
+      logger.error("command", "CodexTreeAdd_visual: " .. error)
       return
     end
 
     if not files or #files == 0 then
-      logger.warn("command", "ClaudeCodeTreeAdd_visual: No files selected in visual range")
+      logger.warn("command", "CodexTreeAdd_visual: No files selected in visual range")
       return
     end
 
@@ -811,45 +811,45 @@ function M._create_commands()
     local total_count = #files
 
     for _, file_path in ipairs(files) do
-      local success, error_msg = M.send_at_mention(file_path, nil, nil, "ClaudeCodeTreeAdd_visual")
+      local success, error_msg = M.send_at_mention(file_path, nil, nil, "CodexTreeAdd_visual")
       if success then
         success_count = success_count + 1
       else
         logger.error(
           "command",
-          "ClaudeCodeTreeAdd_visual: Failed to add file: " .. file_path .. " - " .. (error_msg or "unknown error")
+          "CodexTreeAdd_visual: Failed to add file: " .. file_path .. " - " .. (error_msg or "unknown error")
         )
       end
     end
 
     if success_count > 0 then
-      local message = success_count == 1 and "Added 1 file to Claude context from visual selection"
-        or string.format("Added %d files to Claude context from visual selection", success_count)
+      local message = success_count == 1 and "Added 1 file to Codex context from visual selection"
+        or string.format("Added %d files to Codex context from visual selection", success_count)
       logger.debug("command", message)
 
       if success_count < total_count then
         logger.warn("command", string.format("Added %d/%d files from visual selection", success_count, total_count))
       end
     else
-      logger.error("command", "ClaudeCodeTreeAdd_visual: Failed to add any files from visual selection")
+      logger.error("command", "CodexTreeAdd_visual: Failed to add any files from visual selection")
     end
   end
 
   local unified_tree_add_handler =
     visual_commands.create_visual_command_wrapper(handle_tree_add_normal, handle_tree_add_visual)
 
-  vim.api.nvim_create_user_command("ClaudeCodeTreeAdd", unified_tree_add_handler, {
-    desc = "Add selected file(s) from tree explorer to Claude Code context (supports visual selection)",
+  vim.api.nvim_create_user_command("CodexTreeAdd", unified_tree_add_handler, {
+    desc = "Add selected file(s) from tree explorer to Codex context (supports visual selection)",
   })
 
-  vim.api.nvim_create_user_command("ClaudeCodeAdd", function(opts)
+  vim.api.nvim_create_user_command("CodexAdd", function(opts)
     if not M.state.server then
-      logger.error("command", "ClaudeCodeAdd: Claude Code integration is not running.")
+      logger.error("command", "CodexAdd: Codex integration is not running.")
       return
     end
 
     if not opts.args or opts.args == "" then
-      logger.error("command", "ClaudeCodeAdd: No file path provided")
+      logger.error("command", "CodexAdd: No file path provided")
       return
     end
 
@@ -861,53 +861,53 @@ function M._create_commands()
     if #args > 3 then
       logger.error(
         "command",
-        "ClaudeCodeAdd: Too many arguments. Usage: ClaudeCodeAdd <file-path> [start-line] [end-line]"
+        "CodexAdd: Too many arguments. Usage: CodexAdd <file-path> [start-line] [end-line]"
       )
       return
     end
 
     if args[2] and not start_line then
-      logger.error("command", "ClaudeCodeAdd: Invalid start line number: " .. args[2])
+      logger.error("command", "CodexAdd: Invalid start line number: " .. args[2])
       return
     end
 
     if args[3] and not end_line then
-      logger.error("command", "ClaudeCodeAdd: Invalid end line number: " .. args[3])
+      logger.error("command", "CodexAdd: Invalid end line number: " .. args[3])
       return
     end
 
     if start_line and start_line < 1 then
-      logger.error("command", "ClaudeCodeAdd: Start line must be positive: " .. start_line)
+      logger.error("command", "CodexAdd: Start line must be positive: " .. start_line)
       return
     end
 
     if end_line and end_line < 1 then
-      logger.error("command", "ClaudeCodeAdd: End line must be positive: " .. end_line)
+      logger.error("command", "CodexAdd: End line must be positive: " .. end_line)
       return
     end
 
     if start_line and end_line and start_line > end_line then
       logger.error(
         "command",
-        "ClaudeCodeAdd: Start line (" .. start_line .. ") must be <= end line (" .. end_line .. ")"
+        "CodexAdd: Start line (" .. start_line .. ") must be <= end line (" .. end_line .. ")"
       )
       return
     end
 
     file_path = vim.fn.expand(file_path)
     if vim.fn.filereadable(file_path) == 0 and vim.fn.isdirectory(file_path) == 0 then
-      logger.error("command", "ClaudeCodeAdd: File or directory does not exist: " .. file_path)
+      logger.error("command", "CodexAdd: File or directory does not exist: " .. file_path)
       return
     end
 
     local claude_start_line = start_line and (start_line - 1) or nil
     local claude_end_line = end_line and (end_line - 1) or nil
 
-    local success, error_msg = M.send_at_mention(file_path, claude_start_line, claude_end_line, "ClaudeCodeAdd")
+    local success, error_msg = M.send_at_mention(file_path, claude_start_line, claude_end_line, "CodexAdd")
     if not success then
-      logger.error("command", "ClaudeCodeAdd: " .. (error_msg or "Failed to add file"))
+      logger.error("command", "CodexAdd: " .. (error_msg or "Failed to add file"))
     else
-      local message = "ClaudeCodeAdd: Successfully added " .. file_path
+      local message = "CodexAdd: Successfully added " .. file_path
       if start_line or end_line then
         if start_line and end_line then
           message = message .. " (lines " .. start_line .. "-" .. end_line .. ")"
@@ -920,12 +920,12 @@ function M._create_commands()
   end, {
     nargs = "+",
     complete = "file",
-    desc = "Add specified file or directory to Claude Code context with optional line range",
+    desc = "Add specified file or directory to Codex context with optional line range",
   })
 
   local terminal_ok, terminal = pcall(require, "claudecode.terminal")
   if terminal_ok then
-    vim.api.nvim_create_user_command("ClaudeCode", function(opts)
+    vim.api.nvim_create_user_command("Codex", function(opts)
       local current_mode = vim.fn.mode()
       if current_mode == "v" or current_mode == "V" or current_mode == "\22" then
         vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
@@ -934,10 +934,10 @@ function M._create_commands()
       terminal.simple_toggle({}, cmd_args)
     end, {
       nargs = "*",
-      desc = "Toggle the Claude Code terminal window (simple show/hide) with optional arguments",
+      desc = "Toggle the Codex terminal window (simple show/hide) with optional arguments",
     })
 
-    vim.api.nvim_create_user_command("ClaudeCodeFocus", function(opts)
+    vim.api.nvim_create_user_command("CodexFocus", function(opts)
       local current_mode = vim.fn.mode()
       if current_mode == "v" or current_mode == "V" or current_mode == "\22" then
         vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
@@ -946,50 +946,50 @@ function M._create_commands()
       terminal.focus_toggle({}, cmd_args)
     end, {
       nargs = "*",
-      desc = "Smart focus/toggle Claude Code terminal (switches to terminal if not focused, hides if focused)",
+      desc = "Smart focus/toggle Codex terminal (switches to terminal if not focused, hides if focused)",
     })
 
-    vim.api.nvim_create_user_command("ClaudeCodeOpen", function(opts)
+    vim.api.nvim_create_user_command("CodexOpen", function(opts)
       local cmd_args = opts.args and opts.args ~= "" and opts.args or nil
       terminal.open({}, cmd_args)
     end, {
       nargs = "*",
-      desc = "Open the Claude Code terminal window with optional arguments",
+      desc = "Open the Codex terminal window with optional arguments",
     })
 
-    vim.api.nvim_create_user_command("ClaudeCodeClose", function()
+    vim.api.nvim_create_user_command("CodexClose", function()
       terminal.close()
     end, {
-      desc = "Close the Claude Code terminal window",
+      desc = "Close the Codex terminal window",
     })
   else
     logger.error(
       "init",
-      "Terminal module not found. Terminal commands (ClaudeCode, ClaudeCodeOpen, ClaudeCodeClose) not registered."
+      "Terminal module not found. Terminal commands (Codex, CodexOpen, CodexClose) not registered."
     )
   end
 
   -- Diff management commands
-  vim.api.nvim_create_user_command("ClaudeCodeDiffAccept", function()
+  vim.api.nvim_create_user_command("CodexDiffAccept", function()
     local diff = require("claudecode.diff")
     diff.accept_current_diff()
   end, {
     desc = "Accept the current diff changes",
   })
 
-  vim.api.nvim_create_user_command("ClaudeCodeDiffDeny", function()
+  vim.api.nvim_create_user_command("CodexDiffDeny", function()
     local diff = require("claudecode.diff")
     diff.deny_current_diff()
   end, {
     desc = "Deny/reject the current diff changes",
   })
 
-  vim.api.nvim_create_user_command("ClaudeCodeSelectModel", function(opts)
+  vim.api.nvim_create_user_command("CodexSelectModel", function(opts)
     local cmd_args = opts.args and opts.args ~= "" and opts.args or nil
     M.open_with_model(cmd_args)
   end, {
     nargs = "*",
-    desc = "Select and open Claude terminal with chosen model and optional arguments",
+    desc = "Select and open Codex terminal with chosen model and optional arguments",
   })
 end
 
@@ -1002,7 +1002,7 @@ M.open_with_model = function(additional_args)
   end
 
   vim.ui.select(models, {
-    prompt = "Select Claude model:",
+    prompt = "Select Codex model:",
     format_item = function(item)
       return item.name
     end,
@@ -1018,7 +1018,7 @@ M.open_with_model = function(additional_args)
 
     local model_arg = "--model " .. choice.value
     local final_args = additional_args and (model_arg .. " " .. additional_args) or model_arg
-    vim.cmd("ClaudeCode " .. final_args)
+    vim.cmd("Codex " .. final_args)
   end)
 end
 
@@ -1084,7 +1084,7 @@ end
 ---Test helper functions (exposed for testing)
 function M._broadcast_at_mention(file_path, start_line, end_line)
   if not M.state.server then
-    return false, "Claude Code integration is not running"
+    return false, "Codex integration is not running"
   end
 
   -- Safely format the path and handle validation errors

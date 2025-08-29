@@ -41,9 +41,10 @@ function M.validate_upgrade_request(request, expected_auth_token)
       return false, "Server configuration error: invalid expected authentication token"
     end
 
-    local auth_header = headers["x-claude-code-ide-authorization"]
+    -- Codex header for IDE auth
+    local auth_header = headers["x-codex-ide-authorization"]
     if not auth_header then
-      return false, "Missing authentication header: x-claude-code-ide-authorization"
+      return false, "Missing authentication header: x-codex-ide-authorization"
     end
 
     -- Check for empty auth header
